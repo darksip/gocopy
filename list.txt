@@ -1,0 +1,4 @@
+fic1.txt
+fic2.txt
+fic5.txt
+fic10.txt
