@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio" // Import manquant pour lire la liste des fichiers
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -85,6 +85,7 @@ Veuillez ouvrir le fichier .env et remplir les valeurs appropriées pour chaque 
 
 	startTime := time.Now()
 
+	// Initialisation des canaux et du wait group
 	var wg sync.WaitGroup
 	fileCh := make(chan string, len(files))
 	progressCh := make(chan int, len(files))
@@ -140,11 +141,15 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 		for {
 			err := copyFile(sourcePath, destPath, logger)
 			if err == nil {
-				logger.Printf("Worker %d: Copie réussie de %s vers %s\n", id, sourcePath, destPath)
+				// Log et affichage en cas de copie réussie
+				msg := fmt.Sprintf("Worker %d: Copie de %s vers %s [OK]", id, sourcePath, destPath)
+				logger.Println(msg)
+				fmt.Printf("\033[32m\u2713\033[0m %s\n", msg) // Check vert
 				progressCh <- 1
 				break
 			}
 
+			// Gestion des tentatives en cas d'échec
 			retries++
 			if retries >= maxRetries {
 				errMsg := fmt.Errorf("Worker %d: Échec de la copie de %s après %d tentatives: %v", id, sourcePath, retries, err)
@@ -153,8 +158,9 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 				break
 			}
 
+			// Nouvelle tentative après attente
 			logger.Printf("Worker %d: Erreur lors de la copie de %s, nouvelle tentative (%d/%d)\n", id, sourcePath, retries, maxRetries)
-			time.Sleep(2 * time.Second) // Attente avant de retenter
+			time.Sleep(2 * time.Second)
 		}
 	}
 }
@@ -182,11 +188,11 @@ func copyFile(source, dest string, logger *log.Logger) error {
 			return fmt.Errorf("impossible d'obtenir les informations du fichier source: %w", err)
 		}
 		if !sourceInfo.ModTime().After(destInfo.ModTime()) {
-			msg := fmt.Sprintf("Le fichier de destination %s est plus récent ou identique, copie ignorée\n", dest)
+			// Log et affichage en cas de copie ignorée
+			msg := fmt.Sprintf("Copie ignorée: %s est plus récent ou identique à %s", dest, source)
 			logger.Println(msg)
-			// Affichage avec couleur (fonctionne sur Windows et macOS)
-			fmt.Printf("\033[33m%s\033[0m", msg) // Code couleur ANSI pour jaune
-			return nil                           // Ne pas recopier si la destination est plus récente ou identique
+			fmt.Printf("\033[33m\u26A0\033[0m %s\n", msg) // Pictogramme jaune pour signaler l'ignorance
+			return nil
 		}
 	}
 
@@ -232,6 +238,7 @@ func readFilesList(filePath string) ([]string, error) {
 	defer file.Close()
 
 	var files []string
+	// Scanner chaque ligne du fichier pour obtenir les chemins des fichiers
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		files = append(files, scanner.Text())
