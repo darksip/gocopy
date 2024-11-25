@@ -145,6 +145,20 @@ func copyFile(source, dest string) error {
 	}
 	defer sourceFile.Close()
 
+	// Vérifier si le fichier de destination existe et est plus récent ou identique
+	destInfo, err := os.Stat(dest)
+	if err == nil {
+		sourceInfo, err := os.Stat(source)
+		if err != nil {
+			return fmt.Errorf("impossible d'obtenir les informations du fichier source: %w", err)
+		}
+		if !sourceInfo.ModTime().After(destInfo.ModTime()) {
+			logger := log.New(os.Stdout, "", log.LstdFlags)
+			logger.Printf("Le fichier de destination %s est plus récent ou identique, copie ignorée\n", dest)
+			return nil // Ne pas recopier si la destination est plus récente ou identique
+		}
+	}
+
 	// Créer le fichier de destination en écriture
 	destFile, err := os.Create(dest)
 	if err != nil {
@@ -166,6 +180,12 @@ func copyFile(source, dest string) error {
 	err = os.Chmod(dest, sourceInfo.Mode())
 	if err != nil {
 		return fmt.Errorf("impossible de définir les permissions du fichier de destination: %w", err)
+	}
+
+	// Copier les dates d'accès et de modification du fichier source vers le fichier de destination
+	err = os.Chtimes(dest, sourceInfo.ModTime(), sourceInfo.ModTime())
+	if err != nil {
+		return fmt.Errorf("impossible de définir les dates du fichier de destination: %w", err)
 	}
 
 	return nil
