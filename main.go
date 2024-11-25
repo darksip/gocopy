@@ -139,12 +139,14 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 
 		retries := 0
 		for {
-			err := copyFile(sourcePath, destPath, logger)
+			err := copyFile(sourcePath, id, destPath, logger)
 			if err == nil {
-				// Log et affichage en cas de copie réussie
-				msg := fmt.Sprintf("Worker %d: Copie de %s vers %s [OK]", id, sourcePath, destPath)
-				logger.Println(msg)
-				fmt.Printf("\033[32m\u2713\033[0m %s\n", msg) // Check vert
+				progressCh <- 1
+				break
+			}
+
+			// Gestion du cas de copie ignorée sans retry
+			if err.Error() == "copie ignorée" {
 				progressCh <- 1
 				break
 			}
@@ -166,7 +168,7 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 }
 
 // Fonction pour copier un fichier du chemin source vers le chemin destination
-func copyFile(source, dest string, logger *log.Logger) error {
+func copyFile(source string, id int, dest string, logger *log.Logger) error {
 	// Créer les répertoires parents du fichier de destination si nécessaire
 	err := os.MkdirAll(filepath.Dir(dest), os.ModePerm)
 	if err != nil {
@@ -189,10 +191,10 @@ func copyFile(source, dest string, logger *log.Logger) error {
 		}
 		if !sourceInfo.ModTime().After(destInfo.ModTime()) {
 			// Log et affichage en cas de copie ignorée
-			msg := fmt.Sprintf("Copie ignorée: %s est plus récent ou identique à %s", dest, source)
+			msg := fmt.Sprintf("Worker %d: Copie ignorée pour %s: fichier plus récent ou identique", id, sourceInfo.Name())
 			logger.Println(msg)
-			fmt.Printf("\033[33m\u26A0\033[0m %s\n", msg) // Pictogramme jaune pour signaler l'ignorance
-			return nil
+			fmt.Printf("\033[33m⚠\033[0m %s\n", msg) // Pictogramme jaune pour signaler l'ignorance
+			return fmt.Errorf("copie ignorée")
 		}
 	}
 
