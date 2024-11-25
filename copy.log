@@ -1,6 +1,0 @@
-2024/11/25 17:37:26 Worker 2: Copie réussie de src/fic1.txt vers dest/fic1.txt
-2024/11/25 17:37:26 Worker 1: Copie réussie de src/fic2.txt vers dest/fic2.txt
-2024/11/25 17:37:26 Worker 0: Copie réussie de src/fic5.txt vers dest/fic5.txt
-2024/11/25 17:37:26 Worker 2: Erreur lors de la copie de src/fic10.txt, nouvelle tentative (1/3)
-2024/11/25 17:37:28 Worker 2: Erreur lors de la copie de src/fic10.txt, nouvelle tentative (2/3)
-2024/11/25 17:37:30 Worker 2: Échec de la copie de src/fic10.txt après 3 tentatives: impossible d'ouvrir le fichier source: open src/fic10.txt: no such file or directory
