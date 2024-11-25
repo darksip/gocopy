@@ -35,10 +35,12 @@ Create a `.env` file in the root directory of the project to specify the configu
 SOURCE_DIR=P:\lossless\
 DEST_DIR=\\192.168.133.230\Sony\Sources Demat\Sony.ddex\lossless\
 FILES_LIST_PATH=sony2024.txt
+THREAD_COUNT=3
 ```
 - `SOURCE_DIR`: The source directory containing the files to be copied.
 - `DEST_DIR`: The destination directory where the files will be copied.
 - `FILES_LIST_PATH`: The path to the file containing a list of files to be copied.
+- `THREAD_COUNT`: The number of threads (workers) to use for copying files.
 
 ### Step 4: Run the Program
 To run the program, use the following command:
@@ -55,7 +57,7 @@ This will create an executable named `file-copy-tool` that you can use to run th
 
 ## Project Structure
 - **main.go**: Contains the main logic for multithreaded copying.
-- **.env**: Environment variables to configure source, destination, and list paths.
+- **.env**: Environment variables to configure source, destination, list paths, and thread count.
 - **copy.log**: Log file to track the progress and errors during file copying.
 
 ## Usage
@@ -64,7 +66,7 @@ The tool will read the list of files from the file specified in `FILES_LIST_PATH
 ## Notes
 - Ensure that the `SOURCE_DIR` and `DEST_DIR` are accessible from the system where the program is run.
 - If the `DEST_DIR` is a network path, proper permissions are required to access the network share.
-- For long paths on Windows, you might need to use UNC paths prefixed with `\\?\`.
+- For long paths on Windows, you might need to use UNC paths prefixed with `\\?`.
 
 ## License
 This project is open source and available under the [MIT License](LICENSE).

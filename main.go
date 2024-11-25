@@ -7,14 +7,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
-const maxRetries = 3  // Nombre maximum de tentatives en cas d'échec de copie
-const workerCount = 3 // Nombre de workers pour la copie parallèle
+const maxRetries = 3 // Nombre maximum de tentatives en cas d'échec de copie
 
 func main() {
 	// Chargement des variables d'environnement depuis le fichier .env
@@ -27,10 +27,17 @@ func main() {
 	sourceDir := os.Getenv("SOURCE_DIR")
 	destDir := os.Getenv("DEST_DIR")
 	filesListPath := os.Getenv("FILES_LIST_PATH")
+	threadCountStr := os.Getenv("THREAD_COUNT")
 
 	// Vérification que les variables d'environnement sont définies
-	if sourceDir == "" || destDir == "" || filesListPath == "" {
-		log.Fatal("Les variables d'environnement SOURCE_DIR, DEST_DIR et FILES_LIST_PATH doivent être définies.")
+	if sourceDir == "" || destDir == "" || filesListPath == "" || threadCountStr == "" {
+		log.Fatal("Les variables d'environnement SOURCE_DIR, DEST_DIR, FILES_LIST_PATH et THREAD_COUNT doivent être définies.")
+	}
+
+	// Conversion du nombre de threads en entier
+	workerCount, err := strconv.Atoi(threadCountStr)
+	if err != nil {
+		log.Fatalf("Erreur lors de la conversion de THREAD_COUNT en entier: %v", err)
 	}
 
 	// Lecture de la liste des fichiers à copier
