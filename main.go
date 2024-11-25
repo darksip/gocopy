@@ -138,7 +138,7 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 
 		retries := 0
 		for {
-			err := copyFile(sourcePath, destPath)
+			err := copyFile(sourcePath, destPath, logger)
 			if err == nil {
 				logger.Printf("Worker %d: Copie réussie de %s vers %s\n", id, sourcePath, destPath)
 				progressCh <- 1
@@ -160,7 +160,7 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 }
 
 // Fonction pour copier un fichier du chemin source vers le chemin destination
-func copyFile(source, dest string) error {
+func copyFile(source, dest string, logger *log.Logger) error {
 	// Créer les répertoires parents du fichier de destination si nécessaire
 	err := os.MkdirAll(filepath.Dir(dest), os.ModePerm)
 	if err != nil {
@@ -182,9 +182,11 @@ func copyFile(source, dest string) error {
 			return fmt.Errorf("impossible d'obtenir les informations du fichier source: %w", err)
 		}
 		if !sourceInfo.ModTime().After(destInfo.ModTime()) {
-			logger := log.New(os.Stdout, "", log.LstdFlags)
-			logger.Printf("Le fichier de destination %s est plus récent ou identique, copie ignorée\n", dest)
-			return nil // Ne pas recopier si la destination est plus récente ou identique
+			msg := fmt.Sprintf("Le fichier de destination %s est plus récent ou identique, copie ignorée\n", dest)
+			logger.Println(msg)
+			// Affichage avec couleur (fonctionne sur Windows et macOS)
+			fmt.Printf("\033[33m%s\033[0m", msg) // Code couleur ANSI pour jaune
+			return nil                           // Ne pas recopier si la destination est plus récente ou identique
 		}
 	}
 
