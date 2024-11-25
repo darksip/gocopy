@@ -17,6 +17,34 @@ import (
 const maxRetries = 3 // Nombre maximum de tentatives en cas d'échec de copie
 
 func main() {
+	// Vérifier si le fichier .env existe, sinon en créer un template
+	if _, err := os.Stat(".env"); os.IsNotExist(err) {
+		envFile, err := os.Create(".env")
+		if err != nil {
+			log.Fatalf("Impossible de créer le fichier .env: %v", err)
+		}
+		defer envFile.Close()
+
+		content := `# Fichier de configuration .env pour l'outil de copie de fichiers Go
+# SOURCE_DIR : Le répertoire source contenant les fichiers à copier
+SOURCE_DIR=
+
+# DEST_DIR : Le répertoire de destination où les fichiers seront copiés
+DEST_DIR=
+
+# FILES_LIST_PATH : Le chemin vers le fichier qui contient la liste des fichiers à copier
+FILES_LIST_PATH=
+
+# THREAD_COUNT : Le nombre de threads (workers) à utiliser pour la copie des fichiers
+THREAD_COUNT=`
+		_, err = envFile.WriteString(content)
+		if err != nil {
+			log.Fatalf("Impossible d'écrire dans le fichier .env: %v", err)
+		}
+
+		log.Fatal("Le fichier .env n'existait pas et a été créé. Veuillez le remplir avant de relancer le programme.")
+	}
+
 	// Chargement des variables d'environnement depuis le fichier .env
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -31,7 +59,8 @@ func main() {
 
 	// Vérification que les variables d'environnement sont définies
 	if sourceDir == "" || destDir == "" || filesListPath == "" || threadCountStr == "" {
-		log.Fatal("Les variables d'environnement SOURCE_DIR, DEST_DIR, FILES_LIST_PATH et THREAD_COUNT doivent être définies.")
+		log.Fatal(`Les variables d'environnement SOURCE_DIR, DEST_DIR, FILES_LIST_PATH et THREAD_COUNT doivent être définies dans le fichier .env. 
+Veuillez ouvrir le fichier .env et remplir les valeurs appropriées pour chaque paramètre.`)
 	}
 
 	// Conversion du nombre de threads en entier
