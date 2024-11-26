@@ -21,7 +21,7 @@ func LoadConfig() (*Config, error) {
 	// Charger les variables d'environnement depuis le fichier .env
 	if err := godotenv.Load(".env"); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("Erreur lors du chargement du fichier .env: %v", err)
+			return nil, fmt.Errorf("erreur lors du chargement du fichier .env: %v", err)
 		}
 	}
 
@@ -52,7 +52,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	if len(missingVars) > 0 {
-		return nil, fmt.Errorf("Les variables d'environnement suivantes sont manquantes: %v", missingVars)
+		return nil, fmt.Errorf("les variables d'environnement suivantes sont manquantes: %v", missingVars)
 	}
 
 	// Conversion de THREAD_COUNT en entier

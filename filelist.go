@@ -12,7 +12,7 @@ func ReadFilesList(filePath string) ([]string, error) {
 	// Ouvrir le fichier contenant la liste des fichiers
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("Impossible d'ouvrir la liste des fichiers: %w", err)
+		return nil, fmt.Errorf("impossible d'ouvrir la liste des fichiers: %w", err)
 	}
 	defer file.Close()
 
@@ -27,7 +27,7 @@ func ReadFilesList(filePath string) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("Erreur lors de la lecture de la liste des fichiers: %w", err)
+		return nil, fmt.Errorf("erreur lors de la lecture de la liste des fichiers: %w", err)
 	}
 
 	return files, nil
