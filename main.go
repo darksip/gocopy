@@ -144,13 +144,18 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 				progressCh <- 1
 				break
 			}
-
 			// Gestion du cas de copie ignorée sans retry
 			if err.Error() == "copie ignorée" {
 				progressCh <- 1
 				break
 			}
-
+			// Gestion de la source manquante sans retry
+			if os.IsNotExist(err) {
+				errMsg := fmt.Errorf("Worker %d: fichier source manquant %s ", id, sourcePath)
+				logger.Println(errMsg)
+				errorCh <- errMsg
+				break
+			}
 			// Gestion des tentatives en cas d'échec
 			retries++
 			if retries >= maxRetries {
@@ -170,15 +175,15 @@ func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh 
 // Fonction pour copier un fichier du chemin source vers le chemin destination
 func copyFile(source string, id int, dest string, logger *log.Logger) error {
 	// Créer les répertoires parents du fichier de destination si nécessaire
-	err := os.MkdirAll(filepath.Dir(dest), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("impossible de créer les répertoires de destination: %w", err)
-	}
+	// err := os.MkdirAll(filepath.Dir(dest), os.ModePerm)
+	// if err != nil {
+	// 	return fmt.Errorf("impossible de créer les répertoires de destination: %w", err)
+	// }
 
 	// Ouvrir le fichier source en lecture
 	sourceFile, err := os.Open(source)
 	if err != nil {
-		return fmt.Errorf("impossible d'ouvrir le fichier source: %w", err)
+		return err
 	}
 	defer sourceFile.Close()
 
