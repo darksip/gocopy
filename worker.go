@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -17,10 +18,12 @@ func CopyFiles(ctx context.Context, config *Config, files []string, logger *log.
 	progressCh := make(chan int)
 	errorCh := make(chan error)
 	doneCh := ctx.Done()
+	var wg sync.WaitGroup
 
 	// Lancer les workers
 	for i := 0; i < config.ThreadCount; i++ {
-		go worker(i, config.SourceDir, config.DestDir, fileCh, progressCh, errorCh, doneCh, logger)
+		wg.Add(1)
+		go worker(i, &wg, config.SourceDir, config.DestDir, fileCh, progressCh, errorCh, doneCh, logger)
 	}
 
 	// Envoi des fichiers à copier
@@ -36,27 +39,50 @@ func CopyFiles(ctx context.Context, config *Config, files []string, logger *log.
 	}()
 
 	// Suivi de la progression
-	go trackProgress(len(files), progressCh, logger)
+	var progressWg sync.WaitGroup
+	progressWg.Add(1)
+	go func() {
+		defer progressWg.Done()
+		trackProgress(len(files), progressCh, logger)
+	}()
 
 	// Gestion des erreurs
+	var errorWg sync.WaitGroup
 	var copyErr error
-	for {
-		select {
-		case <-doneCh:
-			return fmt.Errorf("Copie interrompue")
-		case err := <-errorCh:
-			logger.Println(err)
-			copyErr = err
-		default:
-			if copyErr != nil {
-				return copyErr
+	errorWg.Add(1)
+	go func() {
+		defer errorWg.Done()
+		for {
+			select {
+			case <-doneCh:
+				return
+			case err, ok := <-errorCh:
+				if !ok {
+					return
+				}
+				logger.Println(err)
+				copyErr = err
 			}
-			time.Sleep(100 * time.Millisecond)
 		}
+	}()
+
+	// Attendre que les workers aient terminé
+	wg.Wait()
+	close(progressCh)
+	close(errorCh)
+
+	// Attendre que les goroutines de progression et d'erreur se terminent
+	progressWg.Wait()
+	errorWg.Wait()
+
+	if copyErr != nil {
+		return copyErr
 	}
+	return nil
 }
 
-func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh chan<- int, errorCh chan<- error, doneCh <-chan struct{}, logger *log.Logger) {
+func worker(id int, wg *sync.WaitGroup, sourceDir, destDir string, fileCh <-chan string, progressCh chan<- int, errorCh chan<- error, doneCh <-chan struct{}, logger *log.Logger) {
+	defer wg.Done()
 	for {
 		select {
 		case <-doneCh:
