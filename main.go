@@ -6,9 +6,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -89,7 +91,8 @@ Veuillez ouvrir le fichier .env et remplir les valeurs appropriées pour chaque 
 	var wg sync.WaitGroup
 	fileCh := make(chan string, len(files))
 	progressCh := make(chan int, len(files))
-	errorCh := make(chan error) // Canal pour collecter les erreurs non fatales
+	errorCh := make(chan error)
+	doneCh := make(chan struct{})
 
 	// Remplir le canal avec les fichiers à copier
 	for _, file := range files {
@@ -97,10 +100,20 @@ Veuillez ouvrir le fichier .env et remplir les valeurs appropriées pour chaque 
 	}
 	close(fileCh)
 
+	// Capture des interruptions (Ctrl-C)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigCh
+		fmt.Println("\nInterruption détectée, arrêt du programme...")
+		close(doneCh)
+	}()
+
 	// Lancer les workers pour la copie parallèle
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
-		go worker(i, sourceDir, destDir, fileCh, progressCh, errorCh, &wg, logger)
+		go worker(i, sourceDir, destDir, fileCh, progressCh, errorCh, doneCh, &wg, logger)
 	}
 
 	// Goroutine pour suivre la progression de la copie
@@ -131,46 +144,58 @@ Veuillez ouvrir le fichier .env et remplir les valeurs appropriées pour chaque 
 }
 
 // Fonction worker pour copier les fichiers en parallèle
-func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh chan<- int, errorCh chan<- error, wg *sync.WaitGroup, logger *log.Logger) {
+func worker(id int, sourceDir, destDir string, fileCh <-chan string, progressCh chan<- int, errorCh chan<- error, doneCh <-chan struct{}, wg *sync.WaitGroup, logger *log.Logger) {
 	defer wg.Done()
-	for file := range fileCh {
-		sourcePath := filepath.Join(sourceDir, file)
-		destPath := filepath.Join(destDir, file)
-
-		retries := 0
-		for {
-			err := copyFile(sourcePath, id, destPath, logger)
-			if err == nil {
-				progressCh <- 1
-				break
-			}
-			// Gestion du cas de copie ignorée sans retry
-			if err.Error() == "copie ignorée" {
-				progressCh <- 1
-				break
-			}
-			// Gestion de la source manquante sans retry
-			if os.IsNotExist(err) {
-				errMsg := fmt.Errorf("Worker %d: fichier source manquant %s ", id, sourcePath)
-				logger.Println(errMsg)
-				errorCh <- errMsg
-				break
-			}
-			// Gestion des tentatives en cas d'échec
-			retries++
-			if retries >= maxRetries {
-				errMsg := fmt.Errorf("Worker %d: Échec de la copie de %s après %d tentatives: %v", id, sourcePath, retries, err)
-				logger.Println(errMsg)
-				errorCh <- errMsg
-				break
+	for {
+		select {
+		case <-doneCh:
+			logger.Printf("Worker %d: Arrêté suite à une interruption\n", id)
+			return
+		case file, ok := <-fileCh:
+			if !ok {
+				return
 			}
 
-			// Nouvelle tentative après attente
-			logger.Printf("Worker %d: Erreur lors de la copie de %s, nouvelle tentative (%d/%d)\n", id, sourcePath, retries, maxRetries)
-			time.Sleep(2 * time.Second)
+			sourcePath := filepath.Join(sourceDir, file)
+			destPath := filepath.Join(destDir, file)
+
+			retries := 0
+			for {
+				err := copyFile(sourcePath, id, destPath, logger)
+				if err == nil {
+					progressCh <- 1
+					break
+				}
+				// Gestion du cas de copie ignorée sans retry
+				if err.Error() == "copie ignorée" {
+					progressCh <- 1
+					break
+				}
+				// Gestion de la source manquante sans retry
+				if os.IsNotExist(err) {
+					errMsg := fmt.Errorf("Worker %d: fichier source manquant %s ", id, sourcePath)
+					logger.Println(errMsg)
+					errorCh <- errMsg
+					break
+				}
+				// Gestion des tentatives en cas d'échec
+				retries++
+				if retries >= maxRetries {
+					errMsg := fmt.Errorf("Worker %d: Échec de la copie de %s après %d tentatives: %v", id, sourcePath, retries, err)
+					logger.Println(errMsg)
+					errorCh <- errMsg
+					break
+				}
+
+				// Nouvelle tentative après attente
+				logger.Printf("Worker %d: Erreur lors de la copie de %s, nouvelle tentative (%d/%d)\n", id, sourcePath, retries, maxRetries)
+				time.Sleep(2 * time.Second)
+			}
 		}
 	}
 }
+
+// Les autres fonctions (copyFile et readFilesList) restent inchangées
 
 // Fonction pour copier un fichier du chemin source vers le chemin destination
 func copyFile(source string, id int, dest string, logger *log.Logger) error {
