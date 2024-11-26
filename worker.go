@@ -43,7 +43,7 @@ func CopyFiles(ctx context.Context, config *Config, files []string, logger *log.
 	progressWg.Add(1)
 	go func() {
 		defer progressWg.Done()
-		trackProgress(len(files), progressCh, logger)
+		trackProgress(len(files), progressCh)
 	}()
 
 	// Gestion des erreurs
@@ -110,14 +110,14 @@ func worker(id int, wg *sync.WaitGroup, sourceDir, destDir string, fileCh <-chan
 				}
 				// Gestion de la source manquante sans retry
 				if os.IsNotExist(err) {
-					errMsg := fmt.Errorf("Worker %d: Fichier source manquant %s", id, sourcePath)
+					errMsg := fmt.Errorf("worker %d: Fichier source manquant %s", id, sourcePath)
 					errorCh <- errMsg
 					break
 				}
 				// Gestion des tentatives en cas d'échec
 				retries++
 				if retries >= maxRetries {
-					errMsg := fmt.Errorf("Worker %d: Échec de la copie de %s après %d tentatives: %v", id, sourcePath, retries, err)
+					errMsg := fmt.Errorf("worker %d: Échec de la copie de %s après %d tentatives: %v", id, sourcePath, retries, err)
 					errorCh <- errMsg
 					break
 				}

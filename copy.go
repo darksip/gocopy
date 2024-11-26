@@ -23,7 +23,7 @@ func copyFile(source string, id int, dest string, logger *log.Logger) error {
 	// Créer les répertoires parents du fichier de destination si nécessaire
 	err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Impossible de créer les répertoires de destination: %w", err)
+		return fmt.Errorf("impossible de créer les répertoires de destination: %w", err)
 	}
 
 	// Vérifier si le fichier de destination existe
@@ -53,26 +53,26 @@ func copyFile(source string, id int, dest string, logger *log.Logger) error {
 	// Créer le fichier de destination en écriture
 	destFile, err := os.Create(dest)
 	if err != nil {
-		return fmt.Errorf("Impossible de créer le fichier de destination: %w", err)
+		return fmt.Errorf("impossible de créer le fichier de destination: %w", err)
 	}
 	defer destFile.Close()
 
 	// Copier le contenu du fichier source vers le fichier de destination
 	_, err = io.Copy(destFile, sourceFile)
 	if err != nil {
-		return fmt.Errorf("Erreur lors de la copie: %w", err)
+		return fmt.Errorf("erreur lors de la copie: %w", err)
 	}
 
 	// Copier les permissions du fichier source vers le fichier de destination
 	err = os.Chmod(dest, sourceInfo.Mode())
 	if err != nil {
-		return fmt.Errorf("Impossible de définir les permissions du fichier de destination: %w", err)
+		return fmt.Errorf("impossible de définir les permissions du fichier de destination: %w", err)
 	}
 
 	// Copier les dates d'accès et de modification du fichier source vers le fichier de destination
 	err = os.Chtimes(dest, sourceInfo.ModTime(), sourceInfo.ModTime())
 	if err != nil {
-		return fmt.Errorf("Impossible de définir les dates du fichier de destination: %w", err)
+		return fmt.Errorf("impossible de définir les dates du fichier de destination: %w", err)
 	}
 
 	return nil

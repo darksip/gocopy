@@ -9,7 +9,6 @@ import (
 func TestTrackProgress(t *testing.T) {
 	totalFiles := 5
 	progressCh := make(chan int)
-	logger := InitTestLogger()
 
 	go func() {
 		for i := 0; i < totalFiles; i++ {
@@ -19,6 +18,6 @@ func TestTrackProgress(t *testing.T) {
 		close(progressCh)
 	}()
 
-	trackProgress(totalFiles, progressCh, logger)
+	trackProgress(totalFiles, progressCh)
 	// Si la fonction se termine correctement, le test est réussi
 }
