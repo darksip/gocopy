@@ -31,7 +31,7 @@ func TestCopyFile_Success(t *testing.T) {
 
 	logger := InitTestLogger()
 
-	err = copyFile(sourceFile.Name(), 1, destFile.Name(), logger)
+	err = copyFile(sourceFile.Name(), 1, destFile.Name(), false, logger)
 	if err != nil {
 		t.Errorf("Erreur inattendue lors de la copie: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestCopyFile_SourceNotExist(t *testing.T) {
 
 	logger := InitTestLogger()
 
-	err = copyFile("fichier_inexistant.txt", 1, destFile.Name(), logger)
+	err = copyFile("fichier_inexistant.txt", 1, destFile.Name(), false, logger)
 	if err == nil {
 		t.Errorf("Une erreur était attendue pour un fichier source inexistant")
 	}
@@ -86,7 +86,7 @@ func TestCopyFile_CopyIgnored(t *testing.T) {
 
 	logger := InitTestLogger()
 
-	err = copyFile(sourceFile.Name(), 1, destFile.Name(), logger)
+	err = copyFile(sourceFile.Name(), 1, destFile.Name(), false, logger)
 	if err != ErrCopyIgnored {
 		t.Errorf("Erreur attendue ErrCopyIgnored, obtenue: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestFilesAreEqual(t *testing.T) {
 		t.Fatalf("Erreur lors de l'écriture du fichier 2: %v", err)
 	}
 
-	equal, err := filesAreEqual(file1.Name(), file2.Name())
+	equal, err := filesAreEqual(file1.Name(), file2.Name(), false)
 	if err != nil {
 		t.Fatalf("Erreur inattendue: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestFilesAreEqual(t *testing.T) {
 		t.Fatalf("Erreur lors de la modification du fichier 2: %v", err)
 	}
 
-	equal, err = filesAreEqual(file1.Name(), file2.Name())
+	equal, err = filesAreEqual(file1.Name(), file2.Name(), false)
 	if err != nil {
 		t.Fatalf("Erreur inattendue: %v", err)
 	}

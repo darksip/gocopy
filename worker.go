@@ -23,7 +23,7 @@ func CopyFiles(ctx context.Context, config *Config, files []string, logger *log.
 	// Lancer les workers
 	for i := 0; i < config.ThreadCount; i++ {
 		wg.Add(1)
-		go worker(i, &wg, config.SourceDir, config.DestDir, fileCh, progressCh, errorCh, doneCh, logger)
+		go worker(i, &wg, config.SourceDir, config.DestDir, fileCh, progressCh, errorCh, doneCh, logger, config.VerifyHash)
 	}
 
 	// Envoi des fichiers à copier
@@ -81,7 +81,7 @@ func CopyFiles(ctx context.Context, config *Config, files []string, logger *log.
 	return nil
 }
 
-func worker(id int, wg *sync.WaitGroup, sourceDir, destDir string, fileCh <-chan string, progressCh chan<- int, errorCh chan<- error, doneCh <-chan struct{}, logger *log.Logger) {
+func worker(id int, wg *sync.WaitGroup, sourceDir, destDir string, fileCh <-chan string, progressCh chan<- int, errorCh chan<- error, doneCh <-chan struct{}, logger *log.Logger, verifyHash bool) {
 	defer wg.Done()
 	for {
 		select {
@@ -98,7 +98,7 @@ func worker(id int, wg *sync.WaitGroup, sourceDir, destDir string, fileCh <-chan
 
 			retries := 0
 			for {
-				err := copyFile(sourcePath, id, destPath, logger)
+				err := copyFile(sourcePath, id, destPath, verifyHash, logger)
 				if err == nil {
 					progressCh <- 1
 					break
