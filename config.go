@@ -15,6 +15,7 @@ type Config struct {
 	DestDir       string
 	FilesListPath string
 	ThreadCount   int
+	VerifyHash    bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -66,5 +67,6 @@ func LoadConfig() (*Config, error) {
 		DestDir:       destDir,
 		FilesListPath: filesListPath,
 		ThreadCount:   threadCount,
+		VerifyHash:    false, // Default value
 	}, nil
 }

@@ -13,7 +13,7 @@ import (
 
 var ErrCopyIgnored = errors.New("copie ignorée")
 
-func copyFile(source string, id int, dest string, logger *log.Logger) error {
+func copyFile(source string, id int, dest string, verifyHash bool, logger *log.Logger) error {
 	// Vérifier si le fichier source existe
 	sourceInfo, err := os.Stat(source)
 	if err != nil {
@@ -30,7 +30,7 @@ func copyFile(source string, id int, dest string, logger *log.Logger) error {
 	_, err = os.Stat(dest)
 	if err == nil {
 		// Comparer les hashs des fichiers pour déterminer s'ils sont identiques
-		same, err := filesAreEqual(source, dest)
+		same, err := filesAreEqual(source, dest, verifyHash)
 		if err != nil {
 			return err
 		}
@@ -38,7 +38,7 @@ func copyFile(source string, id int, dest string, logger *log.Logger) error {
 			// Log et affichage en cas de copie ignorée
 			msg := fmt.Sprintf("Worker %d: Copie ignorée pour %s: fichiers identiques", id, filepath.Base(source))
 			logger.Println(msg)
-			fmt.Printf("\033[33m⚠\033[0m %s\n", msg) // Pictogramme jaune pour signaler l'ignorance
+			fmt.Printf("\033⚠\033 %s\n", msg) // Pictogramme jaune pour signaler l'ignorance
 			return ErrCopyIgnored
 		}
 	}
@@ -78,7 +78,17 @@ func copyFile(source string, id int, dest string, logger *log.Logger) error {
 	return nil
 }
 
-func filesAreEqual(file1, file2 string) (bool, error) {
+func filesAreEqual(file1, file2 string, verifyHash bool) (bool, error) {
+	// Comparer les tailles des fichiers pour déterminer s'ils sont identiques
+	if !verifyHash {
+		info1, _ := os.Stat(file1)
+		info2, _ := os.Stat(file2)
+		if info2.ModTime().Unix() >= info1.ModTime().Unix() {
+			return true, nil
+		}
+		return false, nil
+	}
+	//test hash
 	hash1, err := fileHash(file1)
 	if err != nil {
 		return false, err

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -12,12 +13,17 @@ import (
 )
 
 func main() {
+	// Add a new flag for hash verification
+	verifyHash := flag.Bool("verify-hash", false, "Activate hash verification during file copy")
+	flag.Parse()
 	// Charger et valider la configuration
 	config, err := LoadConfig()
 	if err != nil {
 		log.Fatalf("Erreur de configuration: %v", err)
 	}
 
+	// Add the hash verification flag to the config
+	config.VerifyHash = *verifyHash
 	// Initialiser le logger
 	logger, err := InitLogger("copy.log")
 	if err != nil {
